@@ -1,17 +1,55 @@
+import java.util.*;
 
-import java.util.ArrayList;
-import java.util.List;
+// Filter interface
+interface Filter {
+    void execute(Student student) throws Exception;
+}
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+// Concrete Filter for eligibility check
+class EligibilityCheckFilter implements Filter {
+    @Override
+    public void execute(Student student) throws Exception {
+        if (student.getDistanceFromUniversity() < 10) {
+            throw new Exception(student.getName() + " is not eligible due to proximity.");
+        }
+        System.out.println(student.getName() + " is eligible for the hostel.");
+    }
+}
 
-/**
- *
- * @author SP22-BSE-159
- */
+// Concrete Filter for fee payment check
+class FeePaymentFilter implements Filter {
+    @Override
+    public void execute(Student student) throws Exception {
+        if (!student.hasPaidFee()) {
+            throw new Exception(student.getName() + " has not paid the hostel fee.");
+        }
+        System.out.println(student.getName() + " has paid the hostel fee.");
+    }
+}
+
+// Concrete Filter for room allocation
+class RoomAllocationFilter implements Filter {
+    @Override
+    public void execute(Student student) {
+        System.out.println("Allocating room for " + student.getName() + "...");
+    }
+}
+
+// HostelPipeline class to execute filters
+class HostelPipeline {
+    private List<Filter> filters = new ArrayList<>();
+
+    public void addFilter(Filter filter) {
+        filters.add(filter);
+    }
+
+    public void executePipeline(Student student) throws Exception {
+        for (Filter filter : filters) {
+            filter.execute(student);
+        }
+    }
+}
+
 // Observer interface
 interface Observer {
     void update(String message);
@@ -50,22 +88,130 @@ class HostelSystem {
     }
 }
 
+// Data Access Layer (DAL)
+class DataAccessLayer {
+    private Map<String, Student> studentData = new HashMap<>();
 
-public class Main {
-    public static void main(String[] args) {
-        HostelSystem hostelSystem = new HostelSystem();
+    public void addStudent(Student student) {
+        studentData.put(student.getName(), student);
+    }
 
-        // Creating students as observers
-        StudentObserver student1 = new StudentObserver("John Doe");
-        StudentObserver student2 = new StudentObserver("Jane Doe");
-
-        // Register students as observers
-        hostelSystem.addObserver(student1);
-        hostelSystem.addObserver(student2);
-
-        // Notify all observers
-        hostelSystem.notifyObservers("New internet service available!");
+    public Student getStudent(String name) {
+        return studentData.get(name);
     }
 }
 
+// Business Logic Layer
+class BusinessLogicLayer {
+    private DataAccessLayer dal;
 
+    public BusinessLogicLayer(DataAccessLayer dal) {
+        this.dal = dal;
+    }
+
+    public void registerStudent(Student student) throws Exception {
+        if (dal.getStudent(student.getName()) != null) {
+            throw new Exception(student.getName() + " is already registered.");
+        }
+        dal.addStudent(student);
+        System.out.println(student.getName() + " has been registered successfully.");
+    }
+
+    public void checkEligibility(Student student) throws Exception {
+        if (student.getDistanceFromUniversity() < 10) {
+            throw new Exception(student.getName() + " is not eligible due to proximity.");
+        }
+        System.out.println(student.getName() + " is eligible for the hostel.");
+    }
+}
+
+// Presentation Layer
+class PresentationLayer {
+    private BusinessLogicLayer businessLogic;
+
+    public PresentationLayer(BusinessLogicLayer businessLogic) {
+        this.businessLogic = businessLogic;
+    }
+
+    public void registerStudent(Student student) {
+        try {
+            businessLogic.registerStudent(student);
+            System.out.println("Student registration successful.");
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    public void checkEligibility(Student student) {
+        try {
+            businessLogic.checkEligibility(student);
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+}
+
+// Student class
+class Student {
+    private String name;
+    private int distanceFromUniversity;
+    private boolean hasPaidFee;
+
+    public Student(String name, int distanceFromUniversity, boolean hasPaidFee) {
+        this.name = name;
+        this.distanceFromUniversity = distanceFromUniversity;
+        this.hasPaidFee = hasPaidFee;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getDistanceFromUniversity() {
+        return distanceFromUniversity;
+    }
+
+    public boolean hasPaidFee() {
+        return hasPaidFee;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        // Create Student
+        Student student = new Student("John Doe", 15, true);
+
+        // Pipeline Filters
+        HostelPipeline pipeline = new HostelPipeline();
+        pipeline.addFilter(new EligibilityCheckFilter());
+        pipeline.addFilter(new FeePaymentFilter());
+        pipeline.addFilter(new RoomAllocationFilter());
+
+        try {
+            System.out.println("Processing through pipeline filters...");
+            pipeline.executePipeline(student);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+        // Observer pattern setup
+        HostelSystem hostelSystem = new HostelSystem();
+        StudentObserver student1 = new StudentObserver("John Doe");
+        StudentObserver student2 = new StudentObserver("Jane Doe");
+
+        hostelSystem.addObserver(student1);
+        hostelSystem.addObserver(student2);
+
+        // Notify observers about new internet service
+        hostelSystem.notifyObservers("New internet service available!");
+
+        // Layered Architecture setup
+        DataAccessLayer dal = new DataAccessLayer();
+        BusinessLogicLayer bl = new BusinessLogicLayer(dal);
+        PresentationLayer presentation = new PresentationLayer(bl);
+
+        // Register and check eligibility
+        presentation.registerStudent(student);
+        presentation.checkEligibility(student);
+    }
+}
