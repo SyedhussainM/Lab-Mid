@@ -1,1 +1,71 @@
 
+import java.util.ArrayList;
+import java.util.List;
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/**
+ *
+ * @author SP22-BSE-159
+ */
+// Observer interface
+interface Observer {
+    void update(String message);
+}
+
+// Concrete Observer class for students
+class StudentObserver implements Observer {
+    private String name;
+
+    public StudentObserver(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public void update(String message) {
+        System.out.println(name + " received update: " + message);
+    }
+}
+
+// Subject class that maintains the observers
+class HostelSystem {
+    private List<Observer> observers = new ArrayList<>();
+
+    public void addObserver(Observer observer) {
+        observers.add(observer);
+    }
+
+    public void removeObserver(Observer observer) {
+        observers.remove(observer);
+    }
+
+    public void notifyObservers(String message) {
+        for (Observer observer : observers) {
+            observer.update(message);
+        }
+    }
+}
+
+
+public class Main {
+    public static void main(String[] args) {
+        HostelSystem hostelSystem = new HostelSystem();
+
+        // Creating students as observers
+        StudentObserver student1 = new StudentObserver("John Doe");
+        StudentObserver student2 = new StudentObserver("Jane Doe");
+
+        // Register students as observers
+        hostelSystem.addObserver(student1);
+        hostelSystem.addObserver(student2);
+
+        // Notify all observers
+        hostelSystem.notifyObservers("New internet service available!");
+    }
+}
+
+
